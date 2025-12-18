@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Personal Finance Manager</title>
+  <style>
+    /* Reset */
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding-top: 50px;
+      color: #2c3e50;
+    }
+    .container {
+      background: #fff;
+      border-radius: 16px;
+      padding: 35px 45px;
+      max-width: 500px;
+      width: 100%;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.15);
+      transition: box-shadow 0.3s ease;
+    }
+    .container:hover {
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+    }
+    h1 {
+      text-align: center;
+      color: #5b2c6f;
+      margin-bottom: 30px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+    }
+    h2 {
+      text-align: center;
+      margin: 18px 0 12px;
+      font-weight: 600;
+      color: #34495e;
+    }
+    h3 {
+      margin-top: 28px;
+      margin-bottom: 12px;
+      font-weight: 600;
+      color: #34495e;
+      border-bottom: 3px solid #764ba2;
+      padding-bottom: 6px;
+      letter-spacing: 0.6px;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 14px 18px;
+      margin-bottom: 18px;
+      font-size: 17px;
+      border-radius: 10px;
+      border: 2px solid #ddd;
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    input:focus, select:focus {
+      outline: none;
+      border-color: #764ba2;
+      box-shadow: 0 0 10px rgba(118, 75, 162, 0.5);
+    }
+    button {
+      background-color: #764ba2;
+      color: white;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      transition: background-color 0.3s ease;
+      border-radius: 10px;
+      letter-spacing: 1px;
+      user-select: none;
+    }
+    button:hover {
+      background-color: #5b2c6f;
+    }
+    ul {
+      list-style-type: none;
+      padding-left: 0;
+      max-height: 260px;
+      overflow-y: auto;
+      border-top: 1px solid #eee;
+      margin-top: 14px;
+    }
+    li {
+      background: #fafafa;
+      margin-bottom: 14px;
+      padding: 16px 22px;
+      border-radius: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 600;
+      color: #3c3c3c;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.05);
+      position: relative;
+      transition: background-color 0.3s ease;
+    }
+    li:hover {
+      background-color: #f0e9ff;
+    }
+    .positive {
+      color: #27ae60;
+    }
+    .negative {
+      color: #c0392b;
+    }
+    /* Delete button */
+    .delete-btn {
+      background: transparent;
+      border: none;
+      font-size: 20px;
+      color: #999;
+      cursor: pointer;
+      transition: color 0.3s ease;
+      margin-left: 20px;
+      user-select: none;
+    }
+    .delete-btn:hover {
+      color: #c0392b;
+    }
+    /* Scrollbar styling */
+    ul::-webkit-scrollbar {
+      width: 9px;
+    }
+    ul::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 12px;
+    }
+    ul::-webkit-scrollbar-thumb {
+      background: #764ba2;
+      border-radius: 12px;
+    }
+    /* Responsive */
+    @media (max-width: 540px) {
+      .container {
+        padding: 25px 30px;
+      }
+      input, select, button {
+        font-size: 15px;
+        padding: 12px 14px;
+      }
+      li {
+        font-size: 15px;
+        padding: 14px 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+
+    <h1>Personal Finance Manager</h1>
+
+    <!-- Budget Input -->
+    <h3>Set Your Budget</h3>
+    <input type="number" id="budget-input" placeholder="Enter your total budget" min="0" />
+    <button onclick="setBudget()">Set Budget</button>
+
+    <!-- Budget Display -->
+    <h2>Total Budget: $<span id="total-budget">0.00</span></h2>
+    <h2>Remaining Budget: $<span id="remaining-budget">0.00</span></h2>
+
+    <!-- Transaction Input -->
+    <h3>Add a Transaction</h3>
+    <form id="transaction-form">
+      <input type="text" id="description" placeholder="Description" />
+      <input type="number" id="amount" placeholder="Amount" min="0.01" step="0.01" />
+      <select id="type">
+        <option value="income">Income</option>
+        <option value="expense" selected>Expense</option>
+      </select>
+      <button type="submit">Add Transaction</button>
+    </form>
+
+    <!-- Transaction List -->
+    <h3>Transactions</h3>
+    <ul id="transactions-list"></ul>
+
+  </div>
+
+<script>
+  // Retrieve from localStorage or initialize
+  let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
+  let totalBudget = parseFloat(localStorage.getItem('totalBudget')) || 0;
+  let remainingBudget = parseFloat(localStorage.getItem('remainingBudget')) || totalBudget;
+
+  const totalBudgetEl = document.getElementById('total-budget');
+  const remainingBudgetEl = document.getElementById('remaining-budget');
+  const transactionsList = document.getElementById('transactions-list');
+  const form = document.getElementById('transaction-form');
+
+  // Update display budget
+  function updateBudgetDisplay() {
+    totalBudgetEl.textContent = totalBudget.toFixed(2);
+    remainingBudgetEl.textContent = remainingBudget.toFixed(2);
+  }
+
+  // Calculate totals
+  function calculateTotals() {
+    const totalExpenses = transactions
+      .filter(t => t.type === 'expense')
+      .reduce((sum, t) => sum + t.amount, 0);
+
+    const totalIncome = transactions
+      .filter(t => t.type === 'income')
+      .reduce((sum, t) => sum + t.amount, 0);
+
+    remainingBudget = totalBudget - totalExpenses + totalIncome;
+    if (remainingBudget < 0) remainingBudget = 0;
+  }
+
+  // Save data to localStorage
+  function saveData() {
+    localStorage.setItem('transactions', JSON.stringify(transactions));
+    localStorage.setItem('totalBudget', totalBudget);
+    localStorage.setItem('remainingBudget', remainingBudget);
+  }
+
+  // Render transactions
+  function renderTransactions() {
+    transactionsList.innerHTML = '';
+    transactions.forEach((t, index) => {
+      const li = document.createElement('li');
+      li.textContent = `${t.description}: $${t.amount.toFixed(2)}`;
+      li.className = t.type === 'income' ? 'positive' : 'negative';
+
+      // Add delete button
+      const deleteBtn = document.createElement('button');
+      deleteBtn.textContent = '×';
+      deleteBtn.className = 'delete-btn';
+      deleteBtn.title = 'Delete transaction';
+      deleteBtn.onclick = () => removeTransaction(index);
+
+      li.appendChild(deleteBtn);
+      transactionsList.appendChild(li);
+    });
+  }
+
+  // Remove transaction by index
+  function removeTransaction(index) {
+    transactions.splice(index, 1);
+    calculateTotals();
+    updateBudgetDisplay();
+    saveData();
+    renderTransactions();
+  }
+
+  // Set budget from input
+  function setBudget() {
+    const budgetInput = document.getElementById('budget-input');
+    const value = parseFloat(budgetInput.value);
+    if (isNaN(value) || value <= 0) {
+      alert('Please enter a valid budget amount greater than zero');
+      return;
+    }
+    totalBudget = value;
+    calculateTotals();
+    updateBudgetDisplay();
+    saveData();
+    budgetInput.value = '';
+  }
+
+  // Add transaction handler
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+
+    const descInput = document.getElementById('description');
+    const amountInput = document.getElementById('amount');
+    const typeInput = document.getElementById('type');
+
+    const desc = descInput.value.trim();
+    const amount = parseFloat(amountInput.value);
+    const type = typeInput.value;
+
+    if (!desc) {
+      alert('Please enter a description');
+      return;
+    }
+    if (isNaN(amount) || amount <= 0) {
+      alert('Please enter a valid amount greater than zero');
+      return;
+    }
+
+    if (type === 'expense' && amount > remainingBudget) {
+      alert('Warning: This expense exceeds your remaining budget!');
+    }
+
+    transactions.push({ description: desc, amount, type });
+    calculateTotals();
+    updateBudgetDisplay();
+    saveData();
+    renderTransactions();
+
+    // Reset form
+    descInput.value = '';
+    amountInput.value = '';
+    typeInput.value = 'expense';
+  });
+
+  // Initialize page with saved data
+  function init() {
+    calculateTotals();
+    updateBudgetDisplay();
+    renderTransactions();
+  }
+
+  init();
+</script>
+</body>
+</html>
+
